@@ -22,8 +22,18 @@ cmds = {
     'disk': "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"
 }
 
-lv2dc = OrderedDict({'lv3': 0, 'lv2': 0.25, 'lv1': 0.5, 'lv0': 0.75})
+lv2dc = OrderedDict({'lv3': 100, 'lv2': 75, 'lv1': 50, 'lv0': 25})
 
+# we hold raw data for MB count and second of sample time
+raw_interface_io = defaultdict(dict)
+raw_disk_io = defaultdict(dict)
+
+# we hold the calculated transfer rates in MB/s
+interface_io_rate = defaultdict(dict)
+disk_io_rate = defaultdict(dict)
+
+# we hold the drive sector size since linux reports in sectors transferred
+disk_sector_sizes = defaultdict(dict)
 
 def check_output(cmd):
     return subprocess.check_output(cmd, shell=True).decode().strip()
@@ -57,29 +67,35 @@ def read_conf():
         cfg = ConfigParser()
         cfg.read('/etc/rockpi-quad.conf')
         # fan
-        conf['fan']['lv0'] = cfg.getfloat('fan', 'lv0')
-        conf['fan']['lv1'] = cfg.getfloat('fan', 'lv1')
-        conf['fan']['lv2'] = cfg.getfloat('fan', 'lv2')
-        conf['fan']['lv3'] = cfg.getfloat('fan', 'lv3')
+        conf['fan']['lv0'] = cfg.getfloat('fan', 'lv0', fallback=35)
+        conf['fan']['lv1'] = cfg.getfloat('fan', 'lv1', fallback=40)
+        conf['fan']['lv2'] = cfg.getfloat('fan', 'lv2', fallback=45)
+        conf['fan']['lv3'] = cfg.getfloat('fan', 'lv3', fallback=50)
+        conf['fan']['linear'] = cfg.getboolean('fan', 'linear', fallback=False)
+        conf['fan']['temp_disks'] = cfg.getboolean('fan', 'temp_disks', fallback=False)
         # key
-        conf['key']['click'] = cfg.get('key', 'click')
-        conf['key']['twice'] = cfg.get('key', 'twice')
-        conf['key']['press'] = cfg.get('key', 'press')
+        conf['key']['click'] = cfg.get('key', 'click', fallback='slider')
+        conf['key']['twice'] = cfg.get('key', 'twice', fallback='switch')
+        conf['key']['press'] = cfg.get('key', 'press', fallback='none')
         # time
-        conf['time']['twice'] = cfg.getfloat('time', 'twice')
-        conf['time']['press'] = cfg.getfloat('time', 'press')
-        # other
-        conf['slider']['auto'] = cfg.getboolean('slider', 'auto')
-        conf['slider']['time'] = cfg.getfloat('slider', 'time')
-        conf['oled']['rotate'] = cfg.getboolean('oled', 'rotate')
-        conf['oled']['f-temp'] = cfg.getboolean('oled', 'f-temp')
+        conf['time']['twice'] = cfg.getfloat('time', 'twice', fallback=0.7)
+        conf['time']['press'] = cfg.getfloat('time', 'press', fallback=1.8)
+        # slider
+        conf['slider']['auto'] = cfg.getboolean('slider', 'auto', fallback=True)
+        conf['slider']['time'] = cfg.getfloat('slider', 'time', fallback=10.0)
+        refresh_string = cfg.get('slider', 'refresh', fallback='0.0')
+        conf['slider']['refresh'] = 0.0 if not len(refresh_string) else float(refresh_string)
+        # oled
+        conf['oled']['rotate'] = cfg.getboolean('oled', 'rotate', fallback=False)
+        conf['oled']['f-temp'] = cfg.getboolean('oled', 'f-temp', fallback=False)
         # disk
-        conf['disk']['space_usage_mnt_points'] = cfg.get('disk', 'space_usage_mnt_points').split('|')
-        conf['disk']['io_usage_mnt_points'] = cfg.get('disk', 'io_usage_mnt_points').split('|')
-        conf['disk']['disks_temp'] = cfg.getboolean('disk', 'disks_temp')
-        #conf['disk']['disks'] = get_disk_list()
+        conf['disk']['space_usage_mnt_points'] = cfg.get('disk', 'space_usage_mnt_points', fallback='').split('|')
+        conf['disk']['io_usage_mnt_points'] = cfg.get('disk', 'io_usage_mnt_points', fallback='').split('|')
+        conf['disk']['disks_temp'] = cfg.getboolean('disk', 'disks_temp', fallback=False)
+        if conf['disk']['disks_temp']:
+            fan_poll_delay[0] = conf['slider']['time'] * 16     # allow for a lot of panels
         # network
-        conf['network']['interfaces'] = cfg.get('network', 'interfaces').split('|')
+        conf['network']['interfaces'] = cfg.get('network', 'interfaces', fallback='').split('|')
     except Exception:
         traceback.print_exc()
         # fan
@@ -87,6 +103,8 @@ def read_conf():
         conf['fan']['lv1'] = 40
         conf['fan']['lv2'] = 45
         conf['fan']['lv3'] = 50
+        conf['fan']['linear'] = False
+        conf['fan']['temp_disks'] = False
         # key
         conf['key']['click'] = 'slider'
         conf['key']['twice'] = 'switch'
@@ -94,9 +112,11 @@ def read_conf():
         # time
         conf['time']['twice'] = 0.7  # second
         conf['time']['press'] = 1.8
-        # other
+        # slider
         conf['slider']['auto'] = True
-        conf['slider']['time'] = 10  # second
+        conf['slider']['time'] = 10.0  # second
+        conf['slider']['refresh'] = 0.0
+        # oled
         conf['oled']['rotate'] = False
         conf['oled']['f-temp'] = False
         # disk
@@ -240,6 +260,10 @@ def get_disk_info(cache={}):
     return cache['info']
 
 
+def get_sector_size(disk):
+    cmd = "cat /sys/block/" + disk + "/queue/hw_sector_size"
+    disk_sector_sizes[disk] = int(check_output(cmd))
+
 
 def slider_next(pages):
     conf['idx'].value += 1
@@ -251,15 +275,26 @@ def slider_sleep():
 
 
 def fan_temp2dc(t):
-    for lv, dc in lv2dc.items():
-        if t >= conf['fan'][lv]:
-            return dc
-    return 0.999
+    if conf['fan']['linear']:
+        lv0_percent = lv2dc['lv0']
+        lv3_percent = lv2dc['lv3']
+        base_temp = conf['fan']['lv0']
+        denominator = conf['fan']['lv3'] - base_temp
+        slope = (lv3_percent - lv0_percent) / denominator if denominator > 0 else 1.0
+        dc = min(lv3_percent, max(slope * (temp - base_temp) + lv0_percent, lv0_percent))        
+        return dc
+    else:
+        for lv, dc in lv2dc.items():
+            if t >= conf['fan'][lv]:
+                return dc
+    return 10
 
 
 def fan_switch():
     conf['run'].value = not conf['run'].value
 
+def fan_running():
+    return conf['run'].value
 
 def get_func(key):
     return conf['key'].get(key, 'none')
