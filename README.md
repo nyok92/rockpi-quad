@@ -27,7 +27,7 @@ sudo reboot
 sudo nano /etc/rockpi-quad.conf
 then restart rockpi-quad service : sudo systemctl restart rockpi-quad.service
 
-You can check status or errors of rockpi-quad : sudo systemctl status rockpi-sata.service
+You can check status or errors of rockpi-quad : sudo systemctl status rockpi-quad.service
 
 ## Acknowledgements
 The fixes are probably from Alexander Larin ([@alexanderlarin](https://github.com/alexanderlarin)), as [his repository](https://github.com/alexanderlarin/rockpi-quad) shows the earliest commits related to these issues. I just modified the build process.
