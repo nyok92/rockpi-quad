@@ -10,8 +10,11 @@ In particular, the CPU fan should be working now.
 ```bash
 sudo apt update
 sudo apt install raspi-config python3-dev python3-rpi.gpio
-wget https://github.com/radxa/rockpi-quad/releases/download/0.3.0/rockpi-quad.deb
+wget https://github.com/nyok92/rockpi-quad/releases/download/0.3.3/rockpi-quad.deb
+sudo mv rockpi-quad.deb /tmp/rockpi-quad.deb
+cd /tmp
 sudo apt install -y ./rockpi-quad.deb
+sudo reboot
 ```
 
 > [!IMPORTANT]
@@ -19,6 +22,11 @@ sudo apt install -y ./rockpi-quad.deb
 * [Rock Pi Quad GitHub Repository](https://github.com/radxa/rockpi-quad)
 * [Quad SATA HAT Wiki](https://wiki.radxa.com/Dual_Quad_SATA_HAT)
 
+## EDIT Rockpi hat settings :
+sudo nano /etc/rockpi-quad.conf
+then restart rockpi-quad service : sudo systemctl restart rockpi-quad.service
+
+You can check status or errors of rockpi-quad : sudo systemctl status rockpi-sata.service
 
 ## Acknowledgements
 The fixes are probably from Alexander Larin ([@alexanderlarin](https://github.com/alexanderlarin)), as [his repository](https://github.com/alexanderlarin/rockpi-quad) shows the earliest commits related to these issues. I just modified the build process.
