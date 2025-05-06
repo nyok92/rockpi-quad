@@ -4,7 +4,7 @@ Top Board control program
 Modified Top Board control program for better compatibility with Raspberry Pi 4.
 In particular, the CPU fan should be working now.
 
-[Quad SATA HAT wiki](<https://wiki.radxa.com/Dual_Quad_SATA_HAT>)
+[JMS561 FW updates and Hardware raid setup](https://wiki.odroid.com/accessory/add-on_boards/xu4_cloudshell2/firmware_upgrade)
 
 ## Installation
 ```bash
