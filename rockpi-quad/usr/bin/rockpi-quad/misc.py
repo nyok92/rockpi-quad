@@ -281,7 +281,7 @@ def fan_temp2dc(temp):
         base_temp = conf['fan']['lv0']
         denominator = conf['fan']['lv3'] - base_temp
         slope = (lv3_percent - lv0_percent) / denominator if denominator > 0 else 1.0
-        dc = min(lv3_percent, max(slope * (temp - base_temp) + lv0_percent, lv0_percent))        
+        dc = min(lv3_percent, max(slope * (temp - base_temp) + lv0_percent, lv0_percent))
         return dc
     else:
         for lv, dc in lv2dc.items():
