@@ -104,7 +104,7 @@ def running():
             pin.period_us(40)
             pin.enable(True)
     else:
-        pins = Gpio(0.025)
+        pins = [Gpio(0.025)]
     while True:
         change_dc(get_dc())
         time.sleep(1)
