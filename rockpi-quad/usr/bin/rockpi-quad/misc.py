@@ -274,7 +274,7 @@ def slider_sleep():
     time.sleep(conf['slider']['time'])
 
 
-def fan_temp2dc(t):
+def fan_temp2dc(temp):
     if conf['fan']['linear']:
         lv0_percent = lv2dc['lv0']
         lv3_percent = lv2dc['lv3']
@@ -285,7 +285,7 @@ def fan_temp2dc(t):
         return dc
     else:
         for lv, dc in lv2dc.items():
-            if t >= conf['fan'][lv]:
+            if temp >= conf['fan'][lv]:
                 return dc
     return 10
 
