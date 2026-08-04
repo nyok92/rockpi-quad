@@ -19,3 +19,8 @@ jobs:
         with:
           name: rockpi-quad.deb
           path: rockpi-quad.deb
+      - name: Release
+        uses: softprops/action-gh-release@v3
+        if: github.ref_type == 'tag'
+        with:
+          files: rockpi-quad.deb
