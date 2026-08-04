@@ -15,6 +15,7 @@ from collections import defaultdict, OrderedDict
 cmds = {
     'blk': "lsblk | awk '{print $1}'",
     'up': "echo Up: $(uptime -p | sed 's/ years,/y/g;s/ year,/y/g;s/ months,/m/g;s/ month,/m/g;s/ weeks,/w/g;s/ week,/w/g;s/ days,/d/g;s/ day,/d/g;s/ hours,/h/g;s/ hour,/h/g;s/ minutes/m/g;s/ minute/m/g' | cut -d ' ' -f2-)",    'temp': "cat /sys/class/thermal/thermal_zone0/temp",
+    'temp': "cat /sys/class/thermal/thermal_zone0/temp",
     'ip': "hostname -I | awk '{printf \"IP %s\", $1}'",
     'cpu': "uptime | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'",
     'men': "free -m | awk 'NR==2{printf \"Mem: %s/%sMB\", $3,$2}'",
