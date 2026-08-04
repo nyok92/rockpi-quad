@@ -8,6 +8,7 @@ import gpiod
 
 import misc
 
+pin = None
 GPIOD_V2 = hasattr(gpiod, 'LineSettings')
 
 
