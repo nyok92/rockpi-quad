@@ -120,22 +120,35 @@ def read_conf():
         cfg = ConfigParser()
         cfg.read('/etc/rockpi-quad.conf')
         # fan
-        conf['fan']['lv0'] = cfg.getfloat('fan', 'lv0')
-        conf['fan']['lv1'] = cfg.getfloat('fan', 'lv1')
-        conf['fan']['lv2'] = cfg.getfloat('fan', 'lv2')
-        conf['fan']['lv3'] = cfg.getfloat('fan', 'lv3')
+        conf['fan']['lv0'] = cfg.getfloat('fan', 'lv0', fallback=35)
+        conf['fan']['lv1'] = cfg.getfloat('fan', 'lv1', fallback=40)
+        conf['fan']['lv2'] = cfg.getfloat('fan', 'lv2', fallback=45)
+        conf['fan']['lv3'] = cfg.getfloat('fan', 'lv3', fallback=50)
+        conf['fan']['linear'] = cfg.getboolean('fan', 'linear', fallback=False)
+        conf['fan']['temp_disks'] = cfg.getboolean('fan', 'temp_disks', fallback=False)
         # key
-        conf['key']['click'] = cfg.get('key', 'click')
-        conf['key']['twice'] = cfg.get('key', 'twice')
-        conf['key']['press'] = cfg.get('key', 'press')
+        conf['key']['click'] = cfg.get('key', 'click', fallback='slider')
+        conf['key']['twice'] = cfg.get('key', 'twice', fallback='switch')
+        conf['key']['press'] = cfg.get('key', 'press', fallback='none')
         # time
-        conf['time']['twice'] = cfg.getfloat('time', 'twice')
-        conf['time']['press'] = cfg.getfloat('time', 'press')
-        # other
-        conf['slider']['auto'] = cfg.getboolean('slider', 'auto')
-        conf['slider']['time'] = cfg.getfloat('slider', 'time')
-        conf['oled']['rotate'] = cfg.getboolean('oled', 'rotate')
-        conf['oled']['f-temp'] = cfg.getboolean('oled', 'f-temp')
+        conf['time']['twice'] = cfg.getfloat('time', 'twice', fallback=0.7)
+        conf['time']['press'] = cfg.getfloat('time', 'press', fallback=1.8)
+        # slider
+        conf['slider']['auto'] = cfg.getboolean('slider', 'auto', fallback=True)
+        conf['slider']['time'] = cfg.getfloat('slider', 'time', fallback=10.0)
+        refresh_string = cfg.get('slider', 'refresh', fallback='0.0')
+        conf['slider']['refresh'] = 0.0 if not len(refresh_string) else float(refresh_string)
+        # oled
+        conf['oled']['rotate'] = cfg.getboolean('oled', 'rotate', fallback=False)
+        conf['oled']['f-temp'] = cfg.getboolean('oled', 'f-temp', fallback=False)
+        # disk
+        conf['disk']['space_usage_mnt_points'] = cfg.get('disk', 'space_usage_mnt_points', fallback='').split('|')
+        conf['disk']['io_usage_mnt_points'] = cfg.get('disk', 'io_usage_mnt_points', fallback='').split('|')
+        conf['disk']['disks_temp'] = cfg.getboolean('disk', 'disks_temp', fallback=False)
+        if conf['disk']['disks_temp']:
+            fan_poll_delay[0] = conf['slider']['time'] * 16     # allow for a lot of panels
+        # network
+        conf['network']['interfaces'] = cfg.get('network', 'interfaces', fallback='').split('|')
     except Exception:
         traceback.print_exc()
         # fan
@@ -143,6 +156,8 @@ def read_conf():
         conf['fan']['lv1'] = 40
         conf['fan']['lv2'] = 45
         conf['fan']['lv3'] = 50
+        conf['fan']['linear'] = False
+        conf['fan']['temp_disks'] = False
         # key
         conf['key']['click'] = 'slider'
         conf['key']['twice'] = 'switch'
@@ -150,11 +165,20 @@ def read_conf():
         # time
         conf['time']['twice'] = 0.7  # second
         conf['time']['press'] = 1.8
-        # other
+        # slider
         conf['slider']['auto'] = True
-        conf['slider']['time'] = 10  # second
+        conf['slider']['time'] = 10.0  # second
+        conf['slider']['refresh'] = 0.0
+        # oled
         conf['oled']['rotate'] = False
         conf['oled']['f-temp'] = False
+        # disk
+        conf['disk']['space_usage_mnt_points'] = []
+        conf['disk']['io_usage_mnt_points'] = []
+        conf['disk']['disks_temp'] = False
+        #conf['disk']['disks'] = []
+        # network
+        conf['network']['interfaces'] = []
 
     return conf
 
