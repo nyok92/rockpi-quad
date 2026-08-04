@@ -9,13 +9,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build DEB package
         run: |
           chmod -R 775 rockpi-quad/DEBIAN/
           dpkg-deb --build -Z gzip rockpi-quad
       - name: Upload DEB package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rockpi-quad.deb
           path: rockpi-quad.deb
