@@ -115,7 +115,6 @@ def change_dc(dc, cache={}):
 
 def running():
     global pins
-
     if os.environ['HARDWARE_PWM'] == '1':
         chip = os.environ['PWMCHIP']
         pins = [Pwm(chip, fun) for fun in os.environ.get('PWM_FUN', '0').split(',')]
