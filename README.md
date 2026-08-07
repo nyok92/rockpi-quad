@@ -11,7 +11,7 @@ In particular, the CPU fan should be working now.
 sudo apt-get update
 sudo apt-get upgrade
 sudo apt install python3-rpi.gpio
-wget https://github.com/nyok92/rockpi-quad/releases/download/0.4.1/rockpi-quad.deb
+wget https://github.com/nyok92/rockpi-quad/releases/download/0.4.2/rockpi-quad.deb
 sudo mv rockpi-quad.deb /tmp/rockpi-quad.deb
 cd /tmp
 sudo apt install -y ./rockpi-quad.deb
